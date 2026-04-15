@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SpotFinder — Discover Hidden Restaurant Ordering Pages</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Barlow:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link rel="preconnect" href="[https://fonts.googleapis.com](https://fonts.googleapis.com)" />
+  <link href="[https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Barlow:wght@300;400;600&display=swap](https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Barlow:wght@300;400;600&display=swap)" rel="stylesheet" />
   <style>
     :root {
       --bg: #F5F2EC; --ink: #0D0D0D; --accent: #E8390E; --line: rgba(13,13,13,0.12);
@@ -31,12 +31,12 @@
 <body>
   <div class="page">
     <h1>SpotFinder<span>.</span></h1>
-    <p style="margin-bottom:40px; opacity:0.8;">Find restaurants using private ordering platforms instead of DoorDash.</p>
+    <p style="margin-bottom:40px; opacity:0.8;">Find restaurants using direct ordering platforms instead of third-party apps.</p>
 
     <div class="search-card">
       <div class="grid">
-        <input type="text" id="city" placeholder="City (e.g. Portland)">
-        <input type="text" id="state" placeholder="State (e.g. Oregon)">
+        <input type="text" id="city" placeholder="City">
+        <input type="text" id="state" placeholder="State">
       </div>
       <div class="chips" id="chips"></div>
       <button class="search-btn" id="btn" disabled>Find Restaurants</button>
@@ -47,9 +47,7 @@
   </div>
 
   <script>
-    const PLATFORMS = [
-      "Toast", "Clover", "Menufy", "SpotOn", "Thanx", "SmileDining", "TapMango", "Olo", "BentoBox"
-    ];
+    const PLATFORMS = ["Toast", "Clover", "Menufy", "SpotOn", "Thanx", "SmileDining", "TapMango", "Olo", "BentoBox"];
     let selected = new Set(["Toast", "SpotOn", "Clover"]);
     const chipsCont = document.getElementById('chips');
     const btn = document.getElementById('btn');
@@ -86,18 +84,18 @@
           body: JSON.stringify({ city, state, platforms: Array.from(selected) })
         });
         
-        const text = await res.text();
+        let text = await res.text();
         
-        // THE FIX: "JSON HUNTER"
-        // This looks for the first '{' and the last '}' to ignore any AI chatter
-        const start = text.indexOf('{');
-        const end = text.lastIndexOf('}');
+        // CLEANER: Strips out Markdown and any non-JSON noise
+        const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+        const start = cleaned.indexOf('{');
+        const end = cleaned.lastIndexOf('}');
         
-        if (start === -1) throw new Error("No data found for this area.");
-        const data = JSON.parse(text.substring(start, end + 1));
+        if (start === -1) throw new Error("Could not parse data. Try another search.");
+        const data = JSON.parse(cleaned.substring(start, end + 1));
 
         if (!data.results || data.results.length === 0) {
-          resultsDiv.innerHTML = "<p style='text-align:center;'>No restaurants found for these specific platforms here.</p>";
+          resultsDiv.innerHTML = "<p style='text-align:center;'>No restaurants found for these platforms in this area.</p>";
         } else {
           data.results.forEach(group => {
             group.restaurants.forEach(r => {
@@ -106,13 +104,13 @@
                   <div style="font-size:10px; font-weight:800; color:var(--accent); text-transform:uppercase; margin-bottom:5px;">${group.platform}</div>
                   <div class="rc-name">${r.name}</div>
                   <div style="font-size:13px; opacity:0.7;">${r.cuisine || 'Restaurant'} • ${r.address || city}</div>
-                  <a href="${r.orderUrl}" target="_blank" class="rc-order-btn rc-link">Order Direct ↗</a>
+                  <a href="${r.orderUrl}" target="_blank" class="rc-link">Order Direct ↗</a>
                 </div>`;
             });
           });
         }
       } catch (e) {
-        resultsDiv.innerHTML = `<div style="color:red; text-align:center; padding:20px;">${e.message}</div>`;
+        resultsDiv.innerHTML = `<div style="color:red; text-align:center; padding:20px;">Error: ${e.message}</div>`;
       } finally {
         status.style.display = 'none';
         btn.disabled = false;
