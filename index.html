@@ -13,17 +13,17 @@
     h1 { font-family: var(--font-display); font-size: 38px; letter-spacing: -0.04em; margin-bottom: 5px; }
     .search-card { background: #FAFAF7; border: 1.5px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 30px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-    input { width: 100%; padding: 12px; border: 1.5px solid var(--line); border-radius: 6px; font-size: 16px; box-sizing: border-box; background: #fff; }
+    input { width: 100%; padding: 12px; border: 1.5px solid var(--line); border-radius: 6px; font-size: 16px; box-sizing: border-box; background: #fff; border: 1.5px solid var(--line); }
     .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 15px 0; }
-    .chip { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--line); cursor: pointer; font-size: 12px; font-weight: 600; background: #fff; }
+    .chip { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--line); cursor: pointer; font-size: 12px; font-weight: 600; background: #fff; color: var(--ink); }
     .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
     .search-btn { width: 100%; padding: 16px; background: var(--ink); color: #fff; border: none; border-radius: 6px; font-family: var(--font-display); font-weight: 800; cursor: pointer; text-transform: uppercase; }
     .search-btn:disabled { opacity: 0.3; }
     .status { text-align: center; padding: 20px; font-weight: 600; display: none; color: var(--accent); }
-    .restaurant-card { background: #fff; border: 1.5px solid var(--line); padding: 20px; border-radius: 8px; margin-bottom: 12px; transition: transform 0.1s; }
-    .restaurant-card:active { transform: scale(0.98); }
+    .restaurant-card { background: #fff; border: 1.5px solid var(--line); padding: 20px; border-radius: 8px; margin-bottom: 12px; }
     .rc-name { font-family: var(--font-display); font-size: 18px; margin-bottom: 4px; }
     .rc-link { display: inline-block; margin-top: 10px; padding: 10px 20px; background: var(--accent); color: #fff; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 700; }
+    .empty { text-align: center; padding: 40px; opacity: 0.6; font-weight: 600; }
   </style>
 </head>
 <body>
@@ -33,14 +33,14 @@
 
     <div class="search-card">
       <div class="grid">
-        <input type="text" id="city" placeholder="City">
-        <input type="text" id="state" placeholder="State">
+        <input type="text" id="city" placeholder="City (e.g. Chicago)">
+        <input type="text" id="state" placeholder="State (e.g. IL)">
       </div>
       <div class="chips" id="chips"></div>
       <button class="search-btn" id="btn" disabled>Find Restaurants</button>
     </div>
 
-    <div id="status" class="status">Magically searching the web...</div>
+    <div id="status" class="status">Searching the web...</div>
     <div id="results"></div>
   </div>
 
@@ -84,34 +84,25 @@
         
         let text = await res.text();
         
-        // --- THE "SUPER-HUNTER" LOGIC ---
-        // 1. Clean out Markdown blocks
+        // --- IMPROVED CLEANER ---
         let cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        
-        // 2. Find where the data actually starts (could be { or [)
-        const firstBrace = cleaned.indexOf('{');
-        const firstBracket = cleaned.indexOf('[');
-        let start = -1;
-        
-        if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
-            start = firstBrace;
-        } else {
-            start = firstBracket;
+        const start = Math.min(
+            cleaned.indexOf('{') === -1 ? Infinity : cleaned.indexOf('{'),
+            cleaned.indexOf('[') === -1 ? Infinity : cleaned.indexOf('[')
+        );
+        const end = Math.max(cleaned.lastIndexOf('}'), cleaned.lastIndexOf(']'));
+
+        // If the AI didn't return a JSON block, show "No results" instead of an error
+        if (start === Infinity || end === -1) {
+          resultsDiv.innerHTML = `<div class="empty">No direct links found for ${city}.<br>Try adding more platforms like Toast or Menufy!</div>`;
+          return;
         }
 
-        const lastBrace = cleaned.lastIndexOf('}');
-        const lastBracket = cleaned.lastIndexOf(']');
-        const end = Math.max(lastBrace, lastBracket);
-
-        if (start === -1 || end === -1) throw new Error("No readable data found.");
-
         const data = JSON.parse(cleaned.substring(start, end + 1));
-        
-        // 3. Normalize the data (Gemini sometimes sends a list, sometimes an object)
         const resultsArray = data.results ? data.results : (Array.isArray(data) ? data : []);
 
         if (resultsArray.length === 0) {
-          resultsDiv.innerHTML = "<p style='text-align:center;'>No restaurants found. Try a bigger city!</p>";
+          resultsDiv.innerHTML = `<div class="empty">No results found in ${city}.</div>`;
         } else {
           resultsArray.forEach(group => {
             if (!group.restaurants) return;
@@ -120,14 +111,14 @@
                 <div class="restaurant-card">
                   <div style="font-size:10px; font-weight:800; color:var(--accent); text-transform:uppercase;">${group.platform}</div>
                   <div class="rc-name">${r.name}</div>
-                  <div style="font-size:13px; opacity:0.7;">${r.cuisine || 'Local Favorite'} • ${r.address || city}</div>
+                  <div style="font-size:13px; opacity:0.7;">${r.cuisine || 'Restaurant'} • ${r.address || city}</div>
                   <a href="${r.orderUrl}" target="_blank" class="rc-link">Order Direct ↗</a>
                 </div>`;
             });
           });
         }
       } catch (e) {
-        resultsDiv.innerHTML = `<div style="color:red; text-align:center; padding:20px;">AI Stutter: ${e.message}<br><small>Try clicking search one more time.</small></div>`;
+        resultsDiv.innerHTML = `<div class="empty">The AI got confused. Try one more time!</div>`;
       } finally {
         status.style.display = 'none';
         btn.disabled = false;
