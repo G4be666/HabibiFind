@@ -1,4 +1,4 @@
-const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
+const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent";
 
 exports.handler = async (event) => {
     const corsHeaders = {
@@ -10,22 +10,33 @@ exports.handler = async (event) => {
     if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: corsHeaders, body: "" };
 
     try {
-        const { city, state, platforms } = JSON.parse(event.body);
         const apiKey = process.env.GEMINI_API_KEY;
+        if (!apiKey) throw new Error("Server configuration missing API key.");
 
-        const prompt = `Act as a high-precision local data scraper. Use Google Search to find restaurants in ${city}, ${state} that use ${platforms.join(", ")} for direct online ordering. 
-        Focus on identifying specific URLs from: toasttab.com, orderspoton.com, menufy.com, chownow.com, and bentobox.com. 
-        Verify that the URLs are active ordering pages. Return a structured list categorized by platform.`;
+        const { city, state, platforms } = JSON.parse(event.body);
 
-        const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
+        // System Instruction using Advanced Search Operators
+        const prompt = `You are a strict data aggregator. Your job is to find verified, direct-ordering URLs for restaurants in ${city}, ${state}.
+        You MUST use the Google Search tool to find exact matches for these platforms: ${platforms.join(", ")}.
+        
+        Search strategy examples:
+        - site:toasttab.com "${city}" "${state}"
+        - site:orderspoton.com "${city}" "${state}"
+        - site:menufy.com "${city}" "${state}"
+        
+        CRITICAL RULES:
+        1. Only return a URL if the search tool confirms it exists. Do not hallucinate links.
+        2. Extract the restaurant name, cuisine type, and the direct ordering URL.`;
+
+        // The API Call with Strict Schema Enforcement
+        const fetchPromise = fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
                 tools: [{ google_search: {} }],
                 generationConfig: {
-                    temperature: 0.1,
-                    // This is the professional way to force JSON format
+                    temperature: 0.1, // Low temperature for high accuracy
                     response_mime_type: "application/json",
                     response_schema: {
                         type: "object",
@@ -43,9 +54,8 @@ exports.handler = async (event) => {
                                                 properties: {
                                                     name: { type: "string" },
                                                     cuisine: { type: "string" },
-                                                    address: { type: "string" },
                                                     orderUrl: { type: "string" },
-                                                    website: { type: "string" }
+                                                    address: { type: "string" }
                                                 },
                                                 required: ["name", "orderUrl"]
                                             }
@@ -53,25 +63,46 @@ exports.handler = async (event) => {
                                     }
                                 }
                             }
-                        }
+                        },
+                        required: ["results"]
                     }
                 }
             })
         });
 
-        const data = await response.json();
+        // The Kill Switch: Force a graceful fail before Netlify crashes the function
+        const timeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error("TIMEOUT")), 8500)
+        );
+
+        const response = await Promise.race([fetchPromise, timeoutPromise]);
         
-        // Error handling for API limits or search failures
-        if (!data.candidates) {
-            return { statusCode: 429, headers: corsHeaders, body: JSON.stringify({ error: "Search quota reached." }) };
+        if (!response.ok) {
+            const errData = await response.json();
+            throw new Error(`API Error: ${errData.error?.message || "Unknown error"}`);
         }
 
+        const data = await response.json();
+        
+        // Return the strictly validated JSON string from Gemini
         return {
             statusCode: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
             body: data.candidates[0].content.parts[0].text
         };
+
     } catch (err) {
-        return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: err.message }) };
+        console.error("[Backend Error]:", err.message);
+        
+        let clientMessage = "An unexpected error occurred while aggregating data.";
+        if (err.message === "TIMEOUT") {
+            clientMessage = "The web search took too long. Try selecting fewer platforms at once to speed up the search.";
+        }
+
+        return { 
+            statusCode: 500, 
+            headers: { ...corsHeaders, "Content-Type": "application/json" }, 
+            body: JSON.stringify({ error: clientMessage }) 
+        };
     }
 };
