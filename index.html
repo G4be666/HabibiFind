@@ -4,7 +4,7 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SpotFinder — Discover Hidden Restaurant Ordering Pages</title>
-  <meta name="description" content="Find restaurants in your city that use Toast, SpotOn, Olo, and other direct ordering platforms — not listed on DoorDash or UberEats." />
+  <meta name="description" content="Find restaurants in your city that use Toast, SpotOn, Clover, and other direct ordering platforms — not listed on DoorDash or UberEats." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet" />
   <style>
@@ -522,23 +522,19 @@
 </head>
 <body>
 
-<!-- ── Header ────────────────────────────────────────────────────────── -->
 <header class="site-header">
   <a class="wordmark" href="/">Spot<span>Finder</span></a>
   <div class="header-tag">Restaurant Scout</div>
 </header>
 
-<!-- ── Main ──────────────────────────────────────────────────────────── -->
 <main class="page">
 
-  <!-- Hero -->
   <section class="hero">
     <div class="hero-eyebrow">Hidden Ordering Platforms</div>
     <h1>Find restaurants<br><em>not listed</em> on DoorDash</h1>
-    <p>Thousands of restaurants take orders directly through Toast, SpotOn, Olo, and other platforms — completely invisible on mainstream delivery apps. SpotFinder surfaces them.</p>
+    <p>Thousands of restaurants take orders directly through Toast, SpotOn, Clover, and other platforms — completely invisible on mainstream delivery apps. SpotFinder surfaces them.</p>
   </section>
 
-  <!-- Search form -->
   <div class="search-form">
     <div class="field-row">
       <div class="field">
@@ -560,20 +556,17 @@
     </button>
   </div>
 
-  <!-- Status -->
   <div class="status-bar hidden" id="status-bar">
     <div class="spin"></div>
     <span id="status-text">Searching…</span>
     <span class="status-live">Live</span>
   </div>
 
-  <!-- Error -->
   <div class="error-box hidden" id="error-box">
     <div id="error-msg"></div>
     <div class="error-detail" id="error-detail" style="display:none"></div>
   </div>
 
-  <!-- Results -->
   <div class="results-wrap" id="results-wrap">
     <div class="results-meta">
       <span class="results-meta-count" id="results-count"></span>
@@ -585,26 +578,30 @@
 
 </main>
 
-<!-- ── Footer ─────────────────────────────────────────────────────────── -->
 <footer class="site-footer">
-  <span class="footer-note">Results powered by Anthropic Claude. Ordering links go directly to restaurant sites.</span>
-  <span class="footer-platforms">Toast · SpotOn · Olo · Menufy · BentoBox · PopMenu · Flipdish · Lunchbox</span>
+  <span class="footer-note">Results powered by Gemini 2.0. Ordering links go directly to restaurant sites.</span>
+  <span class="footer-platforms" id="footer-platforms-list"></span>
 </footer>
 
-<!-- ── Script ─────────────────────────────────────────────────────────── -->
 <script>
   const PLATFORMS = [
-    { id: "toast",    label: "Toast",    color: "#E97B2E" },
-    { id: "spoton",   label: "SpotOn",   color: "#D94F00" },
-    { id: "olo",      label: "Olo",      color: "#0891B2" },
-    { id: "menufy",   label: "Menufy",   color: "#CA8A04" },
-    { id: "bentobox", label: "BentoBox", color: "#7C3AED" },
-    { id: "popmenu",  label: "PopMenu",  color: "#DB2777" },
-    { id: "flipdish", label: "Flipdish", color: "#1D4ED8" },
-    { id: "lunchbox", label: "Lunchbox", color: "#15803D" },
+    { id: 'toast',     label: 'Toast',       color: '#E8390E' },
+    { id: 'clover',    label: 'Clover',      color: '#00cc33' },
+    { id: 'menufy',    label: 'Menufy',      color: '#ff6600' },
+    { id: 'spoton',    label: 'SpotOn',      color: '#0066ff' },
+    { id: 'thanx',     label: 'Thanx',       color: '#000000' },
+    { id: 'smile',     label: 'SmileDining', color: '#ff3399' },
+    { id: 'tapmango',  label: 'TapMango',    color: '#33ccff' },
+    { id: 'olo',       label: 'Olo',         color: '#0D0D0D' },
+    { id: 'bentobox',  label: 'BentoBox',    color: '#555' },
+    { id: 'popmenu',   label: 'PopMenu',     color: '#222' }
   ];
 
-  let selected = new Set(["toast", "spoton", "olo", "menufy"]);
+  // Set default selection
+  let selected = new Set(["toast", "spoton", "clover", "menufy"]);
+
+  // ── Build footer platform list ────────────────────────────────────────
+  document.getElementById("footer-platforms-list").textContent = PLATFORMS.map(p => p.label).join(' · ');
 
   // ── Build platform chips ──────────────────────────────────────────────
   const chipsEl = document.getElementById("chips-container");
@@ -734,12 +731,7 @@
 
     resultsCount.textContent = `${total} restaurant${total !== 1 ? "s" : ""} found`;
     resultsLoc.textContent = `in ${city}, ${state}`;
-
-    if (data.usedWebSearch) {
-      webBadge.classList.add("visible");
-    } else {
-      webBadge.classList.remove("visible");
-    }
+    webBadge.classList.add("visible");
 
     (data.results || []).forEach((group, gi) => {
       if (!group.restaurants?.length) return;
