@@ -1,0 +1,793 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SpotFinder — Discover Hidden Restaurant Ordering Pages</title>
+  <meta name="description" content="Find restaurants in your city that use Toast, SpotOn, Olo, and other direct ordering platforms — not listed on DoorDash or UberEats." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=Barlow:ital,wght@0,300;0,400;0,500;0,600;1,300&display=swap" rel="stylesheet" />
+  <style>
+    /* ── Reset & Tokens ─────────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:       #F5F2EC;
+      --bg2:      #EDE9E1;
+      --ink:      #0D0D0D;
+      --ink2:     #3A3A3A;
+      --ink3:     #888;
+      --line:     rgba(13,13,13,0.12);
+      --accent:   #E8390E;
+      --card-bg:  #FAFAF7;
+      --radius:   6px;
+      --font-display: 'Syne', sans-serif;
+      --font-body:    'Barlow', sans-serif;
+    }
+
+    html { font-size: 16px; scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--ink);
+      font-family: var(--font-body);
+      font-weight: 400;
+      line-height: 1.6;
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────────── */
+    .site-header {
+      border-bottom: 1.5px solid var(--line);
+      padding: 0 clamp(16px, 5vw, 60px);
+      height: 60px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 100;
+    }
+
+    .wordmark {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: 18px;
+      letter-spacing: -0.03em;
+      color: var(--ink);
+      text-decoration: none;
+    }
+
+    .wordmark span { color: var(--accent); }
+
+    .header-tag {
+      font-size: 11px;
+      font-weight: 500;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink3);
+      border: 1px solid var(--line);
+      padding: 4px 10px;
+      border-radius: 20px;
+    }
+
+    .page {
+      max-width: 980px;
+      margin: 0 auto;
+      padding: clamp(32px, 6vw, 80px) clamp(16px, 5vw, 40px) 80px;
+    }
+
+    /* ── Hero ───────────────────────────────────────────────────── */
+    .hero {
+      margin-bottom: 52px;
+      border-bottom: 1.5px solid var(--line);
+      padding-bottom: 40px;
+    }
+
+    .hero-eyebrow {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--accent);
+      margin-bottom: 18px;
+    }
+
+    .hero-eyebrow::before {
+      content: '';
+      display: block;
+      width: 20px;
+      height: 2px;
+      background: var(--accent);
+    }
+
+    .hero h1 {
+      font-family: var(--font-display);
+      font-weight: 800;
+      font-size: clamp(32px, 5.5vw, 62px);
+      line-height: 1.05;
+      letter-spacing: -0.035em;
+      color: var(--ink);
+      max-width: 700px;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 em {
+      font-style: italic;
+      font-weight: 400;
+      color: var(--ink2);
+    }
+
+    .hero p {
+      font-size: 17px;
+      font-weight: 300;
+      color: var(--ink2);
+      max-width: 560px;
+      line-height: 1.65;
+    }
+
+    /* ── Search form ────────────────────────────────────────────── */
+    .search-form {
+      background: var(--card-bg);
+      border: 1.5px solid var(--line);
+      border-radius: 12px;
+      padding: clamp(20px, 4vw, 36px);
+      margin-bottom: 32px;
+    }
+
+    .field-row {
+      display: grid;
+      grid-template-columns: 1fr 200px;
+      gap: 12px;
+      margin-bottom: 28px;
+    }
+
+    @media (max-width: 540px) {
+      .field-row { grid-template-columns: 1fr; }
+    }
+
+    .field { display: flex; flex-direction: column; gap: 6px; }
+
+    .field label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink3);
+      font-family: var(--font-display);
+    }
+
+    .field input {
+      background: var(--bg);
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius);
+      padding: 11px 14px;
+      font-family: var(--font-body);
+      font-size: 15px;
+      color: var(--ink);
+      outline: none;
+      transition: border-color 0.15s;
+      width: 100%;
+    }
+
+    .field input::placeholder { color: var(--ink3); opacity: 0.6; }
+    .field input:focus { border-color: var(--ink); }
+
+    /* ── Platform chips ─────────────────────────────────────────── */
+    .platform-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.14em;
+      text-transform: uppercase;
+      color: var(--ink3);
+      font-family: var(--font-display);
+      margin-bottom: 12px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-bottom: 28px;
+    }
+
+    .chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      padding: 7px 14px;
+      border-radius: 20px;
+      border: 1.5px solid var(--line);
+      background: transparent;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      color: var(--ink3);
+      font-family: var(--font-body);
+      transition: all 0.12s;
+      user-select: none;
+    }
+
+    .chip:hover { border-color: var(--ink2); color: var(--ink2); }
+    .chip.on { color: var(--ink); font-weight: 600; }
+
+    .chip-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--line);
+      flex-shrink: 0;
+      transition: background 0.12s;
+    }
+
+    /* ── Submit button ──────────────────────────────────────────── */
+    .search-btn {
+      width: 100%;
+      padding: 14px 24px;
+      background: var(--ink);
+      color: #fff;
+      border: none;
+      border-radius: var(--radius);
+      font-family: var(--font-display);
+      font-size: 14px;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      cursor: pointer;
+      transition: background 0.15s, transform 0.1s;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+
+    .search-btn:hover:not(:disabled) { background: #222; }
+    .search-btn:active:not(:disabled) { transform: scale(0.99); }
+    .search-btn:disabled { opacity: 0.35; cursor: not-allowed; }
+
+    .btn-arrow { font-size: 18px; transition: transform 0.15s; }
+    .search-btn:hover:not(:disabled) .btn-arrow { transform: translateX(4px); }
+
+    /* ── Status bar ─────────────────────────────────────────────── */
+    .status-bar {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 18px;
+      background: var(--card-bg);
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius);
+      margin-bottom: 28px;
+      font-size: 14px;
+      color: var(--ink2);
+    }
+
+    .status-bar.hidden { display: none; }
+
+    .spin {
+      width: 16px; height: 16px;
+      border: 2px solid var(--line);
+      border-top-color: var(--ink);
+      border-radius: 50%;
+      animation: spin 0.75s linear infinite;
+      flex-shrink: 0;
+    }
+
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    .status-live {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #16A34A;
+      background: #DCFCE7;
+      padding: 2px 8px;
+      border-radius: 4px;
+    }
+
+    /* ── Error box ──────────────────────────────────────────────── */
+    .error-box {
+      padding: 16px 20px;
+      background: #FEF2F2;
+      border: 1.5px solid #FECACA;
+      border-radius: var(--radius);
+      font-size: 14px;
+      color: #991B1B;
+      margin-bottom: 28px;
+    }
+
+    .error-box.hidden { display: none; }
+
+    .error-detail {
+      margin-top: 8px;
+      font-size: 12px;
+      font-family: 'Courier New', monospace;
+      color: #B91C1C;
+      background: #FEE2E2;
+      padding: 8px 10px;
+      border-radius: 4px;
+    }
+
+    /* ── Results ────────────────────────────────────────────────── */
+    .results-wrap { display: none; }
+    .results-wrap.visible { display: block; }
+
+    .results-meta {
+      display: flex;
+      align-items: baseline;
+      gap: 12px;
+      margin-bottom: 32px;
+      padding-bottom: 16px;
+      border-bottom: 1.5px solid var(--line);
+    }
+
+    .results-meta-count {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--ink2);
+      text-transform: uppercase;
+      letter-spacing: 0.08em;
+    }
+
+    .results-meta-loc {
+      font-size: 13px;
+      color: var(--ink3);
+    }
+
+    .web-badge {
+      margin-left: auto;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: #1D4ED8;
+      background: #DBEAFE;
+      padding: 3px 9px;
+      border-radius: 4px;
+      display: none;
+    }
+
+    .web-badge.visible { display: inline-block; }
+
+    .platform-section { margin-bottom: 44px; }
+
+    .platform-header {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      margin-bottom: 16px;
+    }
+
+    .platform-pill {
+      font-family: var(--font-display);
+      font-size: 13px;
+      font-weight: 700;
+      padding: 5px 14px;
+      border-radius: 20px;
+      color: #fff;
+      letter-spacing: 0.02em;
+    }
+
+    .platform-count {
+      font-size: 13px;
+      color: var(--ink3);
+    }
+
+    .restaurant-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+    }
+
+    .restaurant-card {
+      background: var(--card-bg);
+      border: 1.5px solid var(--line);
+      border-radius: var(--radius);
+      padding: 18px 20px;
+      transition: border-color 0.15s, box-shadow 0.15s;
+      animation: fadeUp 0.25s ease both;
+    }
+
+    .restaurant-card:hover {
+      border-color: var(--ink2);
+      box-shadow: 0 4px 20px rgba(0,0,0,0.07);
+    }
+
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(10px); }
+      to   { opacity: 1; transform: none; }
+    }
+
+    .rc-name {
+      font-family: var(--font-display);
+      font-size: 15px;
+      font-weight: 700;
+      color: var(--ink);
+      line-height: 1.3;
+      margin-bottom: 4px;
+    }
+
+    .rc-cuisine {
+      font-size: 11px;
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--ink3);
+      margin-bottom: 10px;
+    }
+
+    .rc-address {
+      font-size: 13px;
+      color: var(--ink2);
+      margin-bottom: 6px;
+      line-height: 1.4;
+    }
+
+    .rc-note {
+      font-size: 12px;
+      font-style: italic;
+      color: var(--ink3);
+      margin-bottom: 10px;
+    }
+
+    .rc-links {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-top: 12px;
+    }
+
+    .rc-order-btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12px;
+      font-weight: 700;
+      font-family: var(--font-display);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      text-decoration: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      color: #fff;
+      transition: opacity 0.15s;
+    }
+
+    .rc-order-btn:hover { opacity: 0.82; }
+
+    .rc-web-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      font-size: 12px;
+      font-weight: 500;
+      color: var(--ink3);
+      text-decoration: none;
+      padding: 6px 10px;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+
+    .rc-web-link:hover { color: var(--ink); border-color: var(--ink); }
+
+    /* ── Empty state ────────────────────────────────────────────── */
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--ink3);
+    }
+
+    .empty-state-icon { font-size: 36px; margin-bottom: 14px; }
+
+    .empty-state h3 {
+      font-family: var(--font-display);
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--ink2);
+      margin-bottom: 8px;
+    }
+
+    /* ── Footer ─────────────────────────────────────────────────── */
+    .site-footer {
+      border-top: 1.5px solid var(--line);
+      padding: 24px clamp(16px, 5vw, 60px);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    .footer-note {
+      font-size: 12px;
+      color: var(--ink3);
+    }
+
+    .footer-platforms {
+      font-size: 11px;
+      color: var(--ink3);
+      font-weight: 500;
+      letter-spacing: 0.06em;
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Header ────────────────────────────────────────────────────────── -->
+<header class="site-header">
+  <a class="wordmark" href="/">Spot<span>Finder</span></a>
+  <div class="header-tag">Restaurant Scout</div>
+</header>
+
+<!-- ── Main ──────────────────────────────────────────────────────────── -->
+<main class="page">
+
+  <!-- Hero -->
+  <section class="hero">
+    <div class="hero-eyebrow">Hidden Ordering Platforms</div>
+    <h1>Find restaurants<br><em>not listed</em> on DoorDash</h1>
+    <p>Thousands of restaurants take orders directly through Toast, SpotOn, Olo, and other platforms — completely invisible on mainstream delivery apps. SpotFinder surfaces them.</p>
+  </section>
+
+  <!-- Search form -->
+  <div class="search-form">
+    <div class="field-row">
+      <div class="field">
+        <label for="city-input">City</label>
+        <input type="text" id="city-input" placeholder="e.g. Portland" autocomplete="off" />
+      </div>
+      <div class="field">
+        <label for="state-input">State</label>
+        <input type="text" id="state-input" placeholder="e.g. Oregon" autocomplete="off" />
+      </div>
+    </div>
+
+    <div class="platform-label">Platforms to search</div>
+    <div class="chips" id="chips-container"></div>
+
+    <button class="search-btn" id="search-btn" disabled>
+      <span id="btn-text">Find Restaurants</span>
+      <span class="btn-arrow">→</span>
+    </button>
+  </div>
+
+  <!-- Status -->
+  <div class="status-bar hidden" id="status-bar">
+    <div class="spin"></div>
+    <span id="status-text">Searching…</span>
+    <span class="status-live">Live</span>
+  </div>
+
+  <!-- Error -->
+  <div class="error-box hidden" id="error-box">
+    <div id="error-msg"></div>
+    <div class="error-detail" id="error-detail" style="display:none"></div>
+  </div>
+
+  <!-- Results -->
+  <div class="results-wrap" id="results-wrap">
+    <div class="results-meta">
+      <span class="results-meta-count" id="results-count"></span>
+      <span class="results-meta-loc" id="results-loc"></span>
+      <span class="web-badge" id="web-badge">Live Web Search</span>
+    </div>
+    <div id="results-container"></div>
+  </div>
+
+</main>
+
+<!-- ── Footer ─────────────────────────────────────────────────────────── -->
+<footer class="site-footer">
+  <span class="footer-note">Results powered by Anthropic Claude. Ordering links go directly to restaurant sites.</span>
+  <span class="footer-platforms">Toast · SpotOn · Olo · Menufy · BentoBox · PopMenu · Flipdish · Lunchbox</span>
+</footer>
+
+<!-- ── Script ─────────────────────────────────────────────────────────── -->
+<script>
+  const PLATFORMS = [
+    { id: "toast",    label: "Toast",    color: "#E97B2E" },
+    { id: "spoton",   label: "SpotOn",   color: "#D94F00" },
+    { id: "olo",      label: "Olo",      color: "#0891B2" },
+    { id: "menufy",   label: "Menufy",   color: "#CA8A04" },
+    { id: "bentobox", label: "BentoBox", color: "#7C3AED" },
+    { id: "popmenu",  label: "PopMenu",  color: "#DB2777" },
+    { id: "flipdish", label: "Flipdish", color: "#1D4ED8" },
+    { id: "lunchbox", label: "Lunchbox", color: "#15803D" },
+  ];
+
+  let selected = new Set(["toast", "spoton", "olo", "menufy"]);
+
+  // ── Build platform chips ──────────────────────────────────────────────
+  const chipsEl = document.getElementById("chips-container");
+  PLATFORMS.forEach(p => {
+    const chip = document.createElement("div");
+    chip.className = "chip" + (selected.has(p.id) ? " on" : "");
+    chip.dataset.id = p.id;
+    chip.innerHTML = `<span class="chip-dot" style="background:${selected.has(p.id) ? p.color : ""}"></span>${p.label}`;
+    chip.addEventListener("click", () => {
+      if (selected.has(p.id)) {
+        selected.delete(p.id);
+        chip.classList.remove("on");
+        chip.querySelector(".chip-dot").style.background = "";
+      } else {
+        selected.add(p.id);
+        chip.classList.add("on");
+        chip.querySelector(".chip-dot").style.background = p.color;
+      }
+      updateBtn();
+    });
+    chipsEl.appendChild(chip);
+  });
+
+  // ── Input state ──────────────────────────────────────────────────────
+  const cityEl   = document.getElementById("city-input");
+  const stateEl  = document.getElementById("state-input");
+  const btn      = document.getElementById("search-btn");
+
+  function updateBtn() {
+    btn.disabled = !cityEl.value.trim() || !stateEl.value.trim() || selected.size === 0;
+  }
+
+  cityEl.addEventListener("input", updateBtn);
+  stateEl.addEventListener("input", updateBtn);
+  cityEl.addEventListener("keydown", e => e.key === "Enter" && stateEl.focus());
+  stateEl.addEventListener("keydown", e => e.key === "Enter" && !btn.disabled && doSearch());
+
+  // ── DOM helpers ──────────────────────────────────────────────────────
+  const statusBar    = document.getElementById("status-bar");
+  const statusText   = document.getElementById("status-text");
+  const errorBox     = document.getElementById("error-box");
+  const errorMsg     = document.getElementById("error-msg");
+  const errorDetail  = document.getElementById("error-detail");
+  const resultsWrap  = document.getElementById("results-wrap");
+  const resultsCont  = document.getElementById("results-container");
+  const resultsCount = document.getElementById("results-count");
+  const resultsLoc   = document.getElementById("results-loc");
+  const webBadge     = document.getElementById("web-badge");
+
+  function setStatus(msg) {
+    statusText.textContent = msg;
+    statusBar.classList.remove("hidden");
+  }
+
+  function clearStatus() { statusBar.classList.add("hidden"); }
+
+  function showError(msg, detail) {
+    errorMsg.textContent = "⚠ " + msg;
+    if (detail) {
+      errorDetail.textContent = detail;
+      errorDetail.style.display = "block";
+    } else {
+      errorDetail.style.display = "none";
+    }
+    errorBox.classList.remove("hidden");
+  }
+
+  function clearError() { errorBox.classList.add("hidden"); }
+
+  // ── Search ───────────────────────────────────────────────────────────
+  btn.addEventListener("click", doSearch);
+
+  async function doSearch() {
+    if (btn.disabled) return;
+
+    const city  = cityEl.value.trim();
+    const state = stateEl.value.trim();
+    const platforms = PLATFORMS.filter(p => selected.has(p.id)).map(p => p.label);
+
+    btn.disabled = true;
+    clearError();
+    resultsWrap.classList.remove("visible");
+    setStatus(`Searching ${city}, ${state}…`);
+
+    try {
+      const res = await fetch("/api/search", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ city, state, platforms }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        showError(data.error || `Server error (${res.status})`, data.rawPreview || null);
+        return;
+      }
+
+      renderResults(data, city, state);
+
+    } catch (err) {
+      showError("Network error — is the server running?", err.message);
+    } finally {
+      clearStatus();
+      btn.disabled = false;
+      updateBtn();
+    }
+  }
+
+  // ── Render ───────────────────────────────────────────────────────────
+  function renderResults(data, city, state) {
+    resultsCont.innerHTML = "";
+
+    const allRestaurants = (data.results || []).flatMap(g => g.restaurants || []);
+    const total = allRestaurants.length;
+
+    if (total === 0) {
+      resultsCont.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state-icon">🔍</div>
+          <h3>Nothing found</h3>
+          <p>No restaurants confirmed for the selected platforms in ${city}, ${state}.<br>Try a larger city or different platforms.</p>
+        </div>`;
+      resultsWrap.classList.add("visible");
+      return;
+    }
+
+    resultsCount.textContent = `${total} restaurant${total !== 1 ? "s" : ""} found`;
+    resultsLoc.textContent = `in ${city}, ${state}`;
+
+    if (data.usedWebSearch) {
+      webBadge.classList.add("visible");
+    } else {
+      webBadge.classList.remove("visible");
+    }
+
+    (data.results || []).forEach((group, gi) => {
+      if (!group.restaurants?.length) return;
+      const plat = PLATFORMS.find(p => p.label === group.platform) || { color: "#555" };
+
+      const section = document.createElement("div");
+      section.className = "platform-section";
+      section.style.animationDelay = `${gi * 0.05}s`;
+
+      const cards = group.restaurants.map((r, ri) => {
+        const orderBtn = r.orderUrl
+          ? `<a class="rc-order-btn" href="${esc(r.orderUrl)}" target="_blank" rel="noopener" style="background:${plat.color}">Order ↗</a>`
+          : "";
+        const webLink = r.website && r.website !== r.orderUrl
+          ? `<a class="rc-web-link" href="${esc(r.website)}" target="_blank" rel="noopener">Website ↗</a>`
+          : "";
+
+        return `
+          <div class="restaurant-card" style="animation-delay:${ri * 0.04}s">
+            <div class="rc-name">${esc(r.name)}</div>
+            ${r.cuisine ? `<div class="rc-cuisine">${esc(r.cuisine)}</div>` : ""}
+            ${r.address ? `<div class="rc-address">📍 ${esc(r.address)}</div>` : ""}
+            ${r.note ? `<div class="rc-note">${esc(r.note)}</div>` : ""}
+            ${(orderBtn || webLink) ? `<div class="rc-links">${orderBtn}${webLink}</div>` : ""}
+          </div>`;
+      }).join("");
+
+      section.innerHTML = `
+        <div class="platform-header">
+          <span class="platform-pill" style="background:${plat.color}">${esc(group.platform)}</span>
+          <span class="platform-count">${group.restaurants.length} restaurant${group.restaurants.length !== 1 ? "s" : ""}</span>
+        </div>
+        <div class="restaurant-grid">${cards}</div>`;
+
+      resultsCont.appendChild(section);
+    });
+
+    resultsWrap.classList.add("visible");
+    resultsWrap.scrollIntoView({ behavior: "smooth", block: "start" });
+  }
+
+  function esc(str) {
+    return String(str || "")
+      .replace(/&/g, "&amp;")
+      .replace(/</g, "&lt;")
+      .replace(/>/g, "&gt;")
+      .replace(/"/g, "&quot;");
+  }
+</script>
+</body>
+</html>
