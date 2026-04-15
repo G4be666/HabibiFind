@@ -1,4 +1,4 @@
-// HabibiFind — Gemini-Powered Free Search (v2.0)
+// HabibiFind — Gemini 2.0 High-Reliability Search
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 exports.handler = async (event) => {
@@ -17,18 +17,11 @@ exports.handler = async (event) => {
         const { city, state, platforms } = JSON.parse(event.body);
         const location = `${city}, ${state}`;
 
-        const prompt = `SEARCH GOOGLE to find real restaurants in ${location} using: ${platforms.join(", ")}.
-        Look for these specific link types:
-        - Clover: clover.com/online-ordering/
-        - Menufy: menufy.com
-        - SpotOn: orderspoton.com
-        - Thanx: thanx.com
-        - SmileDining: smiledining.com
-        - TapMango: tapmango.com
-        - Toast: toasttab.com
-
-        Return ONLY a JSON object:
-        {"results": [{"platform": "Name", "restaurants": [{"name": "N", "cuisine": "C", "orderUrl": "URL", "website": "URL"}]}]}`;
+        // Hardened prompt to prevent the "talking" that causes the JSON error
+        const prompt = `SEARCH GOOGLE for restaurants in ${location} using: ${platforms.join(", ")}.
+        Find direct ordering links for: Clover, Menufy, SpotOn, Thanx, SmileDining, TapMango, Toast, Olo.
+        Return ONLY valid JSON. No conversational text.
+        Format: {"results": [{"platform": "Name", "restaurants": [{"name": "N", "cuisine": "C", "orderUrl": "URL", "website": "URL"}]}]}`;
 
         const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
             method: "POST",
@@ -36,14 +29,17 @@ exports.handler = async (event) => {
             body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
                 tools: [{ google_search: {} }],
-                generationConfig: { response_mime_type: "application/json" }
+                generationConfig: { 
+                    response_mime_type: "application/json",
+                    temperature: 0.1 // Low temperature makes it stick to the format better
+                }
             })
         });
 
         const data = await response.json();
-        let rawText = data.candidates[0].content.parts[0].text;
         
-        // Clean up any potential markdown code blocks the AI might have added
+        // Safety check: sometimes Gemini wraps JSON in markdown blocks
+        let rawText = data.candidates[0].content.parts[0].text;
         const cleanJson = rawText.replace(/```json|```/g, "").trim();
 
         return {
@@ -52,10 +48,11 @@ exports.handler = async (event) => {
             body: cleanJson,
         };
     } catch (err) {
+        console.error("Search Error:", err);
         return { 
             statusCode: 500, 
             headers: corsHeaders, 
-            body: JSON.stringify({ error: "Search failed. Try a larger city or refresh." }) 
+            body: JSON.stringify({ error: "The AI failed to format data. Please try again." }) 
         };
     }
 };
