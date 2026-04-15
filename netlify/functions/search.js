@@ -4,19 +4,60 @@ const https = require('https');
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY;
 const SEARCH_ENGINE_ID = process.env.SEARCH_ENGINE_ID;
 
-// Platforms we support – the search query will look for these domains + location
+// --- Improved Platform Configurations ---
 const PLATFORMS = [
-  { name: 'Clover', domain: 'clover.com', queryTemplate: 'site:clover.com "{location}" restaurant order online' },
-  { name: 'Menufy', domain: 'menufy.com', queryTemplate: 'site:menufy.com "{location}" restaurant' },
-  { name: 'OrderSpotOn', domain: 'orderspot.online', queryTemplate: 'site:orderspot.online "{location}" restaurant' },
-  { name: 'Thanx', domain: 'thanx.com', queryTemplate: 'site:thanx.com/ordering "{location}" restaurant' },
-  { name: 'SmileDining', domain: 'smiledining.com', queryTemplate: 'site:smiledining.com "{location}" restaurant' },
-  { name: 'TapMango', domain: 'tapmango.com', queryTemplate: 'site:tapmango.com "{location}" restaurant' }
+  { 
+    name: 'Clover', 
+    queryTemplate: '{location} restaurant', 
+    siteSearch: 'clover.com' // Use siteSearch for domains
+  },
+  { 
+    name: 'Menufy', 
+    queryTemplate: '{location} restaurant', 
+    siteSearch: 'menufy.com'
+  },
+  { 
+    name: 'OrderSpotOn', 
+    queryTemplate: '{location} restaurant', 
+    inurl: 'orderspot.online' // Use inurl: for subdomains
+  },
+  { 
+    name: 'Thanx', 
+    queryTemplate: '{location} restaurant', 
+    inurl: 'thanx.com/ordering'
+  },
+  { 
+    name: 'SmileDining', 
+    queryTemplate: '{location} restaurant', 
+    siteSearch: 'smiledining.com'
+  },
+  { 
+    name: 'TapMango', 
+    queryTemplate: '{location} restaurant', 
+    siteSearch: 'tapmango.com'
+  }
 ];
 
-// Helper to call Google Custom Search API
-function googleSearch(query) {
-  const url = `https://www.googleapis.com/customsearch/v1?key=${GOOGLE_API_KEY}&cx=${SEARCH_ENGINE_ID}&q=${encodeURIComponent(query)}`;
+// Helper: Google Custom Search API call
+function googleSearch(query, siteSearch = null, inurl = null) {
+  let params = new URLSearchParams({
+    key: GOOGLE_API_KEY,
+    cx: SEARCH_ENGINE_ID,
+    q: query,
+    num: 20  // Request more results per platform
+  });
+
+  if (siteSearch) {
+    params.append('siteSearch', siteSearch);
+  }
+  if (inurl) {
+    // Append inurl: operator to the search query
+    params.set('q', `${query} inurl:${inurl}`);
+  }
+
+  const url = `https://www.googleapis.com/customsearch/v1?${params.toString()}`;
+  console.log(`Searching with URL: ${url}`); // Helpful for debugging
+
   return new Promise((resolve, reject) => {
     https.get(url, (res) => {
       let data = '';
@@ -32,23 +73,23 @@ function googleSearch(query) {
   });
 }
 
-// Extract restaurant name from URL or title (heuristic)
-function extractRestaurantName(item, platformDomain) {
-  // Try to get from the title, removing platform name and location noise
-  let title = item.title;
-  // Many results have format: "Joe's Pizza | Clover" or "Joe's Pizza on Menufy"
-  let name = title.split('|')[0].split('-')[0].split('–')[0].trim();
-  // If name is too long or looks like a URL, fallback to URL path
+// Helper: Extract restaurant name (improved)
+function extractRestaurantName(item, platformName) {
+  let name = item.title.split('|')[0].split('-')[0].split('–')[0].trim();
   if (name.length > 50 || name.includes('http')) {
-    const path = new URL(item.link).pathname;
-    const parts = path.split('/').filter(p => p.length > 2);
-    name = parts[parts.length-1]?.replace(/[_-]/g, ' ') || title;
+    try {
+      const path = new URL(item.link).pathname;
+      const parts = path.split('/').filter(p => p.length > 2);
+      name = parts.pop()?.replace(/[_-]/g, ' ') || name;
+    } catch (e) { /* fallback to title */ }
   }
+  // Remove platform name if it accidentally got included
+  name = name.replace(new RegExp(`\\s*[|(]?\\s*${platformName}\\s*[)|]?`, 'i'), '').trim();
   return name;
 }
 
+// --- Main Netlify Function Handler ---
 exports.handler = async (event) => {
-  // Only allow POST with location
   if (event.httpMethod !== 'POST') {
     return { statusCode: 405, body: 'Method Not Allowed' };
   }
@@ -60,31 +101,35 @@ exports.handler = async (event) => {
 
   const results = [];
   
-  // Search each platform sequentially (to avoid hitting rate limits)
   for (const platform of PLATFORMS) {
     const query = platform.queryTemplate.replace('{location}', location);
     try {
-      const items = await googleSearch(query);
+      const items = await googleSearch(
+        query, 
+        platform.siteSearch || null, 
+        platform.inurl || null
+      );
+      
       for (const item of items) {
-        // Only include if the link actually contains the platform domain (safety)
-        if (item.link.includes(platform.domain)) {
+        const link = item.link;
+        const isValid = platform.siteSearch ? link.includes(platform.siteSearch) : link.includes('orderspot.online') || link.includes('thanx.com');
+        if (isValid) {
           results.push({
-            name: extractRestaurantName(item, platform.domain),
+            name: extractRestaurantName(item, platform.name),
             platform: platform.name,
-            url: item.link,
+            url: link,
             snippet: item.snippet,
           });
         }
       }
     } catch (err) {
       console.error(`Error searching ${platform.name}:`, err);
-      // Continue with other platforms even if one fails
     }
-    // Small delay to be nice to Google (optional)
-    await new Promise(resolve => setTimeout(resolve, 200));
+    // Delay to avoid hitting API rate limits
+    await new Promise(resolve => setTimeout(resolve, 500));
   }
   
-  // Remove duplicates (same URL) and limit to 50 per location
+  // --- Deduplicate Results ---
   const unique = [];
   const seen = new Set();
   for (const r of results) {
@@ -97,6 +142,10 @@ exports.handler = async (event) => {
   return {
     statusCode: 200,
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ location, count: unique.length, restaurants: unique.slice(0, 50) })
+    body: JSON.stringify({ 
+      location, 
+      count: unique.length, 
+      restaurants: unique.slice(0, 50) 
+    })
   };
 };
