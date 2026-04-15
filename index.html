@@ -3,33 +3,33 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SpotFinder — Direct Ordering Search</title>
+  <title>SpotFinder — Direct Ordering</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Barlow:wght@300;400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Barlow:wght@400;600&display=swap" rel="stylesheet" />
   <style>
     :root { --bg: #F5F2EC; --ink: #0D0D0D; --accent: #E8390E; --line: rgba(13,13,13,0.12); --font-display: 'Syne', sans-serif; --font-body: 'Barlow', sans-serif; }
     body { background: var(--bg); color: var(--ink); font-family: var(--font-body); margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
-    .page { max-width: 900px; margin: 0 auto; padding: 40px 20px; }
-    h1 { font-family: var(--font-display); font-size: 42px; letter-spacing: -0.04em; margin-bottom: 10px; }
-    .search-card { background: #FAFAF7; border: 1.5px solid var(--line); border-radius: 12px; padding: 25px; margin-bottom: 30px; }
+    .page { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
+    h1 { font-family: var(--font-display); font-size: 38px; letter-spacing: -0.04em; margin-bottom: 5px; }
+    .search-card { background: #FAFAF7; border: 1.5px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 30px; }
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-    input { width: 100%; padding: 12px; border: 1.5px solid var(--line); border-radius: 6px; font-size: 16px; box-sizing: border-box; }
-    .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 15px 0; }
-    .chip { padding: 6px 14px; border-radius: 20px; border: 1.5px solid var(--line); cursor: pointer; font-size: 12px; font-weight: 600; opacity: 0.5; }
-    .chip.on { background: var(--ink); color: white; border-color: var(--ink); opacity: 1; }
-    .search-btn { width: 100%; padding: 16px; background: var(--ink); color: white; border: none; border-radius: 6px; font-family: var(--font-display); font-weight: 800; cursor: pointer; text-transform: uppercase; }
-    .search-btn:disabled { opacity: 0.3; cursor: not-allowed; }
-    .status { text-align: center; padding: 20px; font-weight: 600; display: none; }
-    .restaurant-card { background: #FAFAF7; border: 1.5px solid var(--line); padding: 20px; border-radius: 8px; margin-bottom: 10px; }
+    input { width: 100%; padding: 12px; border: 1.5px solid var(--line); border-radius: 6px; font-size: 16px; box-sizing: border-box; background: #fff; }
+    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 15px 0; }
+    .chip { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--line); cursor: pointer; font-size: 12px; font-weight: 600; background: #fff; }
+    .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .search-btn { width: 100%; padding: 16px; background: var(--ink); color: #fff; border: none; border-radius: 6px; font-family: var(--font-display); font-weight: 800; cursor: pointer; text-transform: uppercase; }
+    .search-btn:disabled { opacity: 0.3; }
+    .status { text-align: center; padding: 20px; font-weight: 600; display: none; color: var(--accent); }
+    .restaurant-card { background: #fff; border: 1.5px solid var(--line); padding: 20px; border-radius: 8px; margin-bottom: 12px; transition: transform 0.1s; }
+    .restaurant-card:active { transform: scale(0.98); }
     .rc-name { font-family: var(--font-display); font-size: 18px; margin-bottom: 4px; }
-    .rc-link { display: inline-block; margin-top: 10px; padding: 8px 15px; background: var(--accent); color: white; text-decoration: none; border-radius: 4px; font-size: 11px; font-weight: 700; }
-    #debug-log { display: none; background: #fee; color: #911; padding: 15px; border-radius: 6px; font-family: monospace; font-size: 12px; margin-top: 20px; white-space: pre-wrap; word-break: break-all; }
+    .rc-link { display: inline-block; margin-top: 10px; padding: 10px 20px; background: var(--accent); color: #fff; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 700; }
   </style>
 </head>
 <body>
   <div class="page">
     <h1>SpotFinder<span>.</span></h1>
-    <p style="opacity:0.7; margin-bottom:30px;">Direct ordering links for local restaurants.</p>
+    <p style="opacity:0.7; margin-bottom:25px;">Finding direct ordering links for your city...</p>
 
     <div class="search-card">
       <div class="grid">
@@ -37,12 +37,11 @@
         <input type="text" id="state" placeholder="State">
       </div>
       <div class="chips" id="chips"></div>
-      <button class="search-btn" id="btn" disabled>Search Platforms</button>
+      <button class="search-btn" id="btn" disabled>Find Restaurants</button>
     </div>
 
-    <div id="status" class="status">Searching... (Can take 15-20 seconds)</div>
+    <div id="status" class="status">Magically searching the web...</div>
     <div id="results"></div>
-    <div id="debug-log"></div>
   </div>
 
   <script>
@@ -50,7 +49,6 @@
     let selected = new Set(["Toast", "SpotOn", "Clover", "Menufy"]);
     const chipsCont = document.getElementById('chips');
     const btn = document.getElementById('btn');
-    const debug = document.getElementById('debug-log');
 
     PLATFORMS.forEach(p => {
       const el = document.createElement('div');
@@ -77,7 +75,6 @@
       btn.disabled = true;
       status.style.display = 'block';
       resultsDiv.innerHTML = '';
-      debug.style.display = 'none';
 
       try {
         const res = await fetch('/api/search', {
@@ -86,44 +83,51 @@
         });
         
         let text = await res.text();
-
-        // DEEP CLEANER: Handles blocks, lists, and strings
-        const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        const start = Math.min(
-            cleaned.indexOf('{') === -1 ? Infinity : cleaned.indexOf('{'),
-            cleaned.indexOf('[') === -1 ? Infinity : cleaned.indexOf('[')
-        );
-        const end = Math.max(cleaned.lastIndexOf('}'), cleaned.lastIndexOf(']'));
         
-        if (start === Infinity || end === -1) {
-            debug.textContent = "AI Raw Response: \n" + text;
-            debug.style.display = 'block';
-            throw new Error("Invalid format. See debug log below.");
+        // --- THE "SUPER-HUNTER" LOGIC ---
+        // 1. Clean out Markdown blocks
+        let cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
+        
+        // 2. Find where the data actually starts (could be { or [)
+        const firstBrace = cleaned.indexOf('{');
+        const firstBracket = cleaned.indexOf('[');
+        let start = -1;
+        
+        if (firstBrace !== -1 && (firstBracket === -1 || firstBrace < firstBracket)) {
+            start = firstBrace;
+        } else {
+            start = firstBracket;
         }
-        
+
+        const lastBrace = cleaned.lastIndexOf('}');
+        const lastBracket = cleaned.lastIndexOf(']');
+        const end = Math.max(lastBrace, lastBracket);
+
+        if (start === -1 || end === -1) throw new Error("No readable data found.");
+
         const data = JSON.parse(cleaned.substring(start, end + 1));
         
-        // Normalize results (handles if data is a list or an object)
-        const finalResults = data.results || (Array.isArray(data) ? data : []);
+        // 3. Normalize the data (Gemini sometimes sends a list, sometimes an object)
+        const resultsArray = data.results ? data.results : (Array.isArray(data) ? data : []);
 
-        if (finalResults.length === 0) {
-          resultsDiv.innerHTML = "<p style='text-align:center;'>No direct links found in this area.</p>";
+        if (resultsArray.length === 0) {
+          resultsDiv.innerHTML = "<p style='text-align:center;'>No restaurants found. Try a bigger city!</p>";
         } else {
-          finalResults.forEach(group => {
+          resultsArray.forEach(group => {
             if (!group.restaurants) return;
             group.restaurants.forEach(r => {
               resultsDiv.innerHTML += `
                 <div class="restaurant-card">
-                  <div style="font-size:9px; font-weight:800; color:var(--accent); text-transform:uppercase;">${group.platform}</div>
+                  <div style="font-size:10px; font-weight:800; color:var(--accent); text-transform:uppercase;">${group.platform}</div>
                   <div class="rc-name">${r.name}</div>
-                  <div style="font-size:13px; opacity:0.7;">${r.cuisine || 'Restaurant'} • ${r.address || city}</div>
+                  <div style="font-size:13px; opacity:0.7;">${r.cuisine || 'Local Favorite'} • ${r.address || city}</div>
                   <a href="${r.orderUrl}" target="_blank" class="rc-link">Order Direct ↗</a>
                 </div>`;
             });
           });
         }
       } catch (e) {
-        resultsDiv.innerHTML = `<div style="color:red; text-align:center; padding:20px;">Error: ${e.message}</div>`;
+        resultsDiv.innerHTML = `<div style="color:red; text-align:center; padding:20px;">AI Stutter: ${e.message}<br><small>Try clicking search one more time.</small></div>`;
       } finally {
         status.style.display = 'none';
         btn.disabled = false;
