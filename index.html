@@ -3,128 +3,219 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SpotFinder Pro | Direct Dining Intelligence</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Syne:wght@700&display=swap" rel="stylesheet">
+    <title>SpotFinder | The Direct Ordering Engine</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Syne:wght@700;800&display=swap" rel="stylesheet">
     <style>
         :root {
-            --primary: #E8390E; --dark: #0D0D0D; --glass: rgba(255,255,255,0.8);
-            --border: rgba(13,13,13,0.08); --shadow: 0 8px 30px rgba(0,0,0,0.04);
+            --primary: #E8390E; --dark: #0D0D0D; --surface: #FFFFFF; --bg: #F9F8F6;
+            --border: rgba(13,13,13,0.1); --text-muted: #666666;
+            --shadow: 0 12px 40px rgba(0,0,0,0.06);
         }
-        body { background: #F9F8F6; color: var(--dark); font-family: 'Inter', sans-serif; margin: 0; line-height: 1.6; }
         
-        /* Navbar */
-        nav { padding: 20px 40px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--glass); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; }
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', sans-serif; }
+        body { background: var(--bg); color: var(--dark); -webkit-font-smoothing: antialiased; }
+
+        /* Navigation */
+        nav { padding: 20px 40px; background: rgba(249,248,246,0.9); backdrop-filter: blur(10px); border-bottom: 1px solid var(--border); position: sticky; top: 0; z-index: 100; }
         .logo { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -1px; }
 
-        /* Hero & Search */
-        .hero { max-width: 1000px; margin: 80px auto; padding: 0 20px; text-align: center; }
-        h1 { font-family: 'Syne', sans-serif; font-size: clamp(40px, 8vw, 72px); letter-spacing: -3px; line-height: 0.9; margin-bottom: 24px; }
+        /* Hero */
+        .container { max-width: 1200px; margin: 0 auto; padding: 60px 24px; }
+        .header { text-align: center; max-width: 800px; margin: 0 auto 40px; }
+        h1 { font-family: 'Syne', sans-serif; font-size: clamp(40px, 6vw, 72px); letter-spacing: -3px; line-height: 1; margin-bottom: 16px; }
+        .subtitle { font-size: 18px; color: var(--text-muted); line-height: 1.5; }
+
+        /* Search Interface */
+        .search-engine { background: var(--surface); padding: 32px; border-radius: 24px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 60px; }
+        .input-group { display: flex; gap: 16px; margin-bottom: 24px; }
+        @media (max-width: 640px) { .input-group { flex-direction: column; } }
         
-        .search-container { 
-            background: #fff; border: 1px solid var(--border); padding: 8px; border-radius: 16px; 
-            box-shadow: var(--shadow); display: flex; gap: 8px; max-width: 600px; margin: 40px auto;
-        }
-        input { border: none; padding: 16px; font-size: 16px; width: 100%; outline: none; font-family: inherit; }
-        .btn-search { background: var(--dark); color: #fff; border: none; padding: 0 32px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
-        .btn-search:hover { transform: translateY(-2px); background: var(--primary); }
+        input { flex: 1; padding: 16px 20px; font-size: 16px; border: 1.5px solid var(--border); border-radius: 12px; outline: none; transition: border-color 0.2s; background: var(--bg); }
+        input:focus { border-color: var(--primary); background: var(--surface); }
+        
+        .btn-primary { background: var(--dark); color: #fff; border: none; padding: 16px 40px; font-size: 16px; font-weight: 700; border-radius: 12px; cursor: pointer; transition: 0.2s; white-space: nowrap; }
+        .btn-primary:hover:not(:disabled) { background: var(--primary); transform: translateY(-2px); }
+        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
 
-        /* Filter Chips */
-        .filters { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 60px; }
-        .chip { padding: 8px 16px; border-radius: 100px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s; }
-        .chip.active { background: var(--dark); color: #fff; border-color: var(--dark); }
+        /* Platforms */
+        .platform-grid { display: flex; flex-wrap: wrap; gap: 10px; justify-content: center; }
+        .platform-chip { padding: 10px 20px; border: 1px solid var(--border); border-radius: 100px; font-size: 13px; font-weight: 600; cursor: pointer; background: var(--surface); transition: all 0.2s; user-select: none; }
+        .platform-chip.selected { background: var(--dark); color: #fff; border-color: var(--dark); }
 
-        /* Results Grid */
-        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; max-width: 1200px; margin: 0 auto 100px; padding: 0 20px; }
-        .card { background: #fff; border: 1px solid var(--border); border-radius: 20px; padding: 24px; transition: 0.3s; position: relative; overflow: hidden; }
-        .card:hover { border-color: var(--primary); box-shadow: var(--shadow); }
-        .card-tag { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--primary); letter-spacing: 1px; margin-bottom: 12px; }
-        .card-name { font-family: 'Syne', sans-serif; font-size: 20px; margin-bottom: 8px; }
-        .card-meta { font-size: 14px; opacity: 0.6; margin-bottom: 20px; }
-        .card-link { display: block; text-align: center; background: var(--dark); color: #fff; text-decoration: none; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 14px; }
-
-        /* Skeleton Loading */
-        .loader { display: none; text-align: center; padding: 40px; font-weight: 600; }
+        /* States */
+        .state-container { text-align: center; padding: 60px 20px; display: none; }
+        .state-container.active { display: block; }
+        .spinner { width: 40px; height: 40px; border: 3px solid var(--border); border-top-color: var(--primary); border-radius: 50%; animation: spin 1s linear infinite; margin: 0 auto 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        /* Grid */
+        .results-section { display: none; }
+        .results-section.active { display: block; }
+        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; }
+        
+        /* Cards */
+        .card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 24px; display: flex; flex-direction: column; transition: 0.2s; }
+        .card:hover { transform: translateY(-4px); box-shadow: var(--shadow); border-color: var(--primary); }
+        .card-platform { font-size: 11px; font-weight: 800; text-transform: uppercase; color: var(--primary); letter-spacing: 1px; margin-bottom: 12px; }
+        .card-title { font-family: 'Syne', sans-serif; font-size: 22px; font-weight: 700; margin-bottom: 8px; line-height: 1.2; }
+        .card-details { font-size: 14px; color: var(--text-muted); margin-bottom: 24px; flex-grow: 1; }
+        .card-action { display: block; text-align: center; background: var(--bg); color: var(--dark); text-decoration: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 14px; border: 1px solid var(--border); transition: 0.2s; }
+        .card:hover .card-action { background: var(--dark); color: #fff; border-color: var(--dark); }
     </style>
 </head>
 <body>
 
 <nav>
-    <div class="logo">SPOTFINDER<span style="color:var(--primary)">.</span></div>
-    <div style="font-size: 12px; font-weight: 600; opacity: 0.5;">v2.0 PRO BOLD</div>
+    <div class="logo">SpotFinder<span style="color:var(--primary)">.</span></div>
 </nav>
 
-<div class="hero">
-    <h1>Own your data.<br>Skip the apps.</h1>
-    <p>The first search engine for direct restaurant ordering links.</p>
-    
-    <div class="search-container">
-        <input type="text" id="location" placeholder="Enter City, State (e.g. Austin, TX)">
-        <button class="btn-search" id="searchBtn">SEARCH</button>
+<main class="container">
+    <header class="header">
+        <h1>Bypass the apps.</h1>
+        <p class="subtitle">A search engine dedicated to finding direct, commission-free ordering links for local restaurants in your city.</p>
+    </header>
+
+    <div class="search-engine">
+        <div class="input-group">
+            <input type="text" id="cityInput" placeholder="City (e.g., Chicago)">
+            <input type="text" id="stateInput" placeholder="State (e.g., IL)">
+            <button id="searchBtn" class="btn-primary">Find Menus</button>
+        </div>
+        <div class="platform-grid" id="platformContainer"></div>
     </div>
 
-    <div class="filters" id="platformFilters">
-        </div>
-</div>
+    <div id="loadingState" class="state-container">
+        <div class="spinner"></div>
+        <h3 style="font-family: 'Syne', sans-serif; font-size: 24px;">Aggregating Live Data...</h3>
+        <p class="subtitle" style="margin-top: 8px;">Scraping the web for direct links. This takes up to 8 seconds.</p>
+    </div>
 
-<div id="loader" class="loader">Aggregating live data from the web...</div>
-<div class="results-grid" id="results"></div>
+    <div id="messageState" class="state-container">
+        <h3 id="messageTitle" style="font-family: 'Syne', sans-serif; font-size: 24px;"></h3>
+        <p id="messageBody" class="subtitle" style="margin-top: 8px; max-width: 600px; margin-inline: auto;"></p>
+    </div>
+
+    <div id="resultsState" class="results-section">
+        <div class="grid" id="resultsGrid"></div>
+    </div>
+</main>
 
 <script>
-    const PLATFORMS = ["Toast", "SpotOn", "Menufy", "BentoBox", "Olo", "ChowNow"];
-    let selectedPlatforms = new Set(["Toast", "SpotOn"]);
-    const resultsGrid = document.getElementById('results');
-    const loader = document.getElementById('loader');
+    const PLATFORMS = ["Toast", "SpotOn", "Menufy", "ChowNow", "Olo", "BentoBox", "Clover", "TapMango", "SmileDining", "Thanx"];
+    let selectedPlatforms = new Set(["Toast", "SpotOn", "Menufy"]);
 
-    // Initialize Chips
-    const filterCont = document.getElementById('platformFilters');
-    PLATFORMS.forEach(p => {
-        const chip = document.createElement('div');
-        chip.className = `chip ${selectedPlatforms.has(p) ? 'active' : ''}`;
-        chip.textContent = p;
-        chip.onclick = () => {
-            selectedPlatforms.has(p) ? selectedPlatforms.delete(p) : selectedPlatforms.add(p);
-            chip.classList.toggle('active');
+    // DOM Elements
+    const els = {
+        city: document.getElementById('cityInput'),
+        state: document.getElementById('stateInput'),
+        btn: document.getElementById('searchBtn'),
+        platforms: document.getElementById('platformContainer'),
+        loading: document.getElementById('loadingState'),
+        message: document.getElementById('messageState'),
+        results: document.getElementById('resultsState'),
+        grid: document.getElementById('resultsGrid'),
+        msgTitle: document.getElementById('messageTitle'),
+        msgBody: document.getElementById('messageBody')
+    };
+
+    // Init UI
+    PLATFORMS.forEach(platform => {
+        const btn = document.createElement('div');
+        btn.className = `platform-chip ${selectedPlatforms.has(platform) ? 'selected' : ''}`;
+        btn.textContent = platform;
+        btn.onclick = () => {
+            if (selectedPlatforms.has(platform)) {
+                if (selectedPlatforms.size > 1) {
+                    selectedPlatforms.delete(platform);
+                    btn.classList.remove('selected');
+                }
+            } else {
+                selectedPlatforms.add(platform);
+                btn.classList.add('selected');
+            }
         };
-        filterCont.appendChild(chip);
+        els.platforms.appendChild(btn);
     });
 
-    document.getElementById('searchBtn').onclick = async () => {
-        const query = document.getElementById('location').value;
-        if(!query || selectedPlatforms.size === 0) return;
+    // View Controller
+    function setView(view, title = '', body = '', isError = false) {
+        els.loading.classList.remove('active');
+        els.message.classList.remove('active');
+        els.results.classList.remove('active');
 
-        const [city, state] = query.split(',').map(s => s.trim());
-        
-        loader.style.display = 'block';
-        resultsGrid.innerHTML = '';
+        if (view === 'loading') els.loading.classList.add('active');
+        if (view === 'results') els.results.classList.add('active');
+        if (view === 'message') {
+            els.msgTitle.textContent = title;
+            els.msgTitle.style.color = isError ? '#DC2626' : 'var(--dark)';
+            els.msgBody.textContent = body;
+            els.message.classList.add('active');
+        }
+    }
+
+    // Core Logic
+    els.btn.onclick = async () => {
+        const city = els.city.value.trim();
+        const state = els.state.value.trim();
+
+        if (!city || !state) {
+            setView('message', 'Missing Location', 'Please enter both a City and State to begin the search.', true);
+            return;
+        }
+
+        els.btn.disabled = true;
+        els.grid.innerHTML = '';
+        setView('loading');
 
         try {
             const response = await fetch('/api/search', {
                 method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({ city, state, platforms: Array.from(selectedPlatforms) })
             });
 
             const data = await response.json();
-            
-            if (!data.results) throw new Error("No data found.");
 
+            // Catch the custom backend errors (like the Timeout)
+            if (!response.ok) {
+                throw new Error(data.error || "The server failed to respond.");
+            }
+
+            if (!data.results || data.results.length === 0) {
+                setView('message', 'No Direct Links Found', `We couldn't verify any active ordering links for ${city}, ${state} on the selected platforms.`);
+                return;
+            }
+
+            let resultCount = 0;
             data.results.forEach(group => {
-                group.restaurants.forEach(r => {
-                    resultsGrid.innerHTML += `
+                if(!group.restaurants) return;
+                group.restaurants.forEach(rest => {
+                    resultCount++;
+                    const safeUrl = rest.orderUrl.startsWith('http') ? rest.orderUrl : `https://${rest.orderUrl}`;
+                    
+                    els.grid.innerHTML += `
                         <div class="card">
-                            <div class="card-tag">${group.platform}</div>
-                            <div class="card-name">${r.name}</div>
-                            <div class="card-meta">${r.cuisine || 'Restaurant'} • ${r.address || city}</div>
-                            <a href="${r.orderUrl}" target="_blank" class="card-link">ORDER DIRECT</a>
+                            <div class="card-platform">${group.platform}</div>
+                            <div class="card-title">${rest.name}</div>
+                            <div class="card-details">${rest.cuisine || 'Restaurant'} • ${rest.address || city}</div>
+                            <a href="${safeUrl}" target="_blank" rel="noopener noreferrer" class="card-action">Order Direct ↗</a>
                         </div>
                     `;
                 });
             });
-        } catch (err) {
-            resultsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; opacity:0.5;">${err.message}</div>`;
+
+            if (resultCount === 0) {
+                setView('message', 'No Links Found', 'The search completed, but no verifiable links were returned.');
+            } else {
+                setView('results');
+            }
+
+        } catch (error) {
+            setView('message', 'Search Interrupted', error.message, true);
         } finally {
-            loader.style.display = 'none';
+            els.btn.disabled = false;
         }
-    }
+    };
 </script>
 
 </body>
