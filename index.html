@@ -1,144 +1,89 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>SpotFinder Pro | Direct Ordering Intelligence</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Syne:wght@700;800&display=swap" rel="stylesheet">
+    <title>Free Restaurant Aggregator</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
     <style>
-        :root { --primary: #E8390E; --dark: #0D0D0D; --bg: #F9F8F6; --border: rgba(13,13,13,0.1); }
-        body { background: var(--bg); color: var(--dark); font-family: 'Inter', sans-serif; margin: 0; padding: 0; }
-        
-        /* Nav */
-        nav { padding: 20px 40px; background: #fff; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; position: sticky; top: 0; z-index: 100; }
-        .logo { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -1px; }
-
-        /* Main */
-        .container { max-width: 1100px; margin: 0 auto; padding: 60px 20px; text-align: center; }
-        h1 { font-family: 'Syne', sans-serif; font-size: clamp(40px, 8vw, 72px); letter-spacing: -3px; line-height: 0.9; margin-bottom: 20px; }
-        .subtitle { font-size: 18px; opacity: 0.6; margin-bottom: 40px; }
-
-        /* Search Box */
-        .search-container { background: #fff; border: 1px solid var(--border); border-radius: 20px; padding: 10px; display: flex; max-width: 700px; margin: 0 auto 30px; box-shadow: 0 10px 30px rgba(0,0,0,0.05); }
-        input { flex: 1; border: none; padding: 15px 20px; font-size: 16px; outline: none; background: transparent; }
-        .btn-search { background: var(--dark); color: #fff; border: none; padding: 0 40px; border-radius: 12px; font-weight: 700; cursor: pointer; transition: 0.2s; }
-        .btn-search:hover { background: var(--primary); }
-        .btn-search:disabled { opacity: 0.5; cursor: wait; }
-
-        /* Filters */
-        .chips { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 50px; }
-        .chip { padding: 8px 18px; border: 1px solid var(--border); border-radius: 100px; font-size: 13px; font-weight: 600; cursor: pointer; background: #fff; transition: 0.2s; }
-        .chip.active { background: var(--dark); color: #fff; border-color: var(--dark); }
-
-        /* Grid */
-        .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(320px, 1fr)); gap: 24px; text-align: left; }
-        .card { background: #fff; border: 1px solid var(--border); border-radius: 24px; padding: 30px; transition: 0.3s; }
-        .card:hover { border-color: var(--primary); transform: translateY(-5px); box-shadow: 0 12px 30px rgba(0,0,0,0.08); }
-        .plat-tag { font-size: 10px; font-weight: 800; color: var(--primary); text-transform: uppercase; margin-bottom: 12px; letter-spacing: 1px; }
-        .rest-name { font-family: 'Syne', sans-serif; font-size: 22px; margin-bottom: 8px; }
-        .rest-meta { font-size: 14px; opacity: 0.5; margin-bottom: 25px; }
-        .order-btn { display: block; text-align: center; background: var(--dark); color: #fff; text-decoration: none; padding: 14px; border-radius: 12px; font-weight: 700; font-size: 14px; }
-
-        /* States */
-        #loader { display: none; padding: 50px; font-weight: 800; color: var(--primary); }
-        #error-msg { color: red; display: none; padding: 20px; font-weight: 600; }
+        body { font-family: system-ui, sans-serif; max-width: 1000px; margin: 2rem auto; padding: 1rem; }
+        input, button { padding: 10px; font-size: 1rem; margin: 5px; }
+        .restaurant { border: 1px solid #ddd; border-radius: 12px; padding: 1rem; margin: 1rem 0; }
+        .platform { background: #eef; display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 0.8rem; }
+        a { color: #0066cc; text-decoration: none; }
+        a:hover { text-decoration: underline; }
+        .loading { color: #666; font-style: italic; }
+        .error { color: red; }
     </style>
 </head>
 <body>
-
-<nav>
-    <div class="logo">SPOTFINDER<span style="color:var(--primary)">.</span></div>
-    <div style="font-size: 11px; font-weight: 800; opacity: 0.4;">ENGINE V2.5 PRO</div>
-</nav>
-
-<main class="container">
-    <h1>Own your data.<br>Skip the fees.</h1>
-    <p class="subtitle">Direct-ordering links for every restaurant in your city.</p>
-
-    <div class="search-container">
-        <input type="text" id="locInput" placeholder="Enter City, State (e.g. Austin, TX)">
-        <button class="btn-search" id="searchBtn">SEARCH</button>
+    <h1>🍽️ Find Restaurants by Ordering Platform</h1>
+    <p>Enter a city & state or zip code → get direct links to order using Clover, Menufy, OrderSpotOn, Thanx, SmileDining, or TapMango.</p>
+    
+    <div>
+        <input type="text" id="location" placeholder="e.g., Chicago, IL or 90210" size="30">
+        <button id="searchBtn">🔍 Search</button>
     </div>
+    
+    <div id="results"></div>
 
-    <div class="chips" id="platformBox"></div>
-
-    <div id="loader">SEARCHING THE DEEP WEB...</div>
-    <div id="error-msg"></div>
-    <div class="grid" id="resultsGrid"></div>
-</main>
-
-<script>
-    const PLATS = ["Toast", "SpotOn", "Menufy", "BentoBox", "Olo", "ChowNow"];
-    let selected = new Set(["Toast", "SpotOn", "Menufy"]);
-
-    // Init UI
-    const box = document.getElementById('platformBox');
-    PLATS.forEach(p => {
-        const c = document.createElement('div');
-        c.className = `chip ${selected.has(p) ? 'active' : ''}`;
-        c.textContent = p;
-        c.onclick = () => {
-            selected.has(p) ? selected.delete(p) : selected.add(p);
-            c.classList.toggle('active');
-        };
-        box.appendChild(c);
-    });
-
-    document.getElementById('searchBtn').onclick = async () => {
-        const loc = document.getElementById('locInput').value;
-        const grid = document.getElementById('resultsGrid');
-        const loader = document.getElementById('loader');
-        const err = document.getElementById('error-msg');
-        const btn = document.getElementById('searchBtn');
-
-        if(!loc || selected.size === 0) return;
-        const [city, state] = loc.split(',').map(s => s.trim());
-
-        // Reset UI
-        grid.innerHTML = '';
-        err.style.display = 'none';
-        loader.style.display = 'block';
-        btn.disabled = true;
-
-        try {
-            const res = await fetch('/api/search', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ city, state, platforms: Array.from(selected) })
-            });
-
-            // Audit the response: If it's not JSON, it's a Netlify timeout error
-            const contentType = res.headers.get("content-type");
-            if (!contentType || !contentType.includes("application/json")) {
-                throw new Error("The search took too long and timed out. Try selecting fewer platforms.");
+    <script>
+        const searchBtn = document.getElementById('searchBtn');
+        const locationInput = document.getElementById('location');
+        const resultsDiv = document.getElementById('results');
+        
+        searchBtn.addEventListener('click', async () => {
+            const location = locationInput.value.trim();
+            if (!location) {
+                resultsDiv.innerHTML = '<p class="error">Please enter a location.</p>';
+                return;
             }
-
-            const data = await res.json();
-            if (data.error) throw new Error(data.error);
-
-            if (!data.results || data.results.length === 0) {
-                grid.innerHTML = `<p style="grid-column: 1/-1; text-align:center; opacity:0.5;">No active direct links found for this area.</p>`;
-            } else {
-                data.results.forEach(group => {
-                    group.restaurants.forEach(r => {
-                        grid.innerHTML += `
-                            <div class="card">
-                                <div class="plat-tag">${group.platform}</div>
-                                <div class="rest-name">${r.name}</div>
-                                <div class="rest-meta">${r.cuisine || 'Restaurant'} • ${r.address || city}</div>
-                                <a href="${r.orderUrl}" target="_blank" class="order-btn">ORDER DIRECT ↗</a>
-                            </div>`;
-                    });
+            
+            resultsDiv.innerHTML = '<div class="loading">Searching... this takes ~5 seconds while we check all 6 platforms.</div>';
+            
+            try {
+                const response = await fetch('/.netlify/functions/search', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ location })
                 });
+                
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                const data = await response.json();
+                
+                if (data.restaurants.length === 0) {
+                    resultsDiv.innerHTML = `<p>No restaurants found for "${location}" using those platforms. Try a different city or zip code.</p>`;
+                    return;
+                }
+                
+                // Group by platform for nicer display
+                const byPlatform = {};
+                for (const r of data.restaurants) {
+                    if (!byPlatform[r.platform]) byPlatform[r.platform] = [];
+                    byPlatform[r.platform].push(r);
+                }
+                
+                let html = `<h3>Found ${data.count} restaurants in ${data.location}</h3>`;
+                for (const [platform, restaurants] of Object.entries(byPlatform)) {
+                    html += `<details><summary><strong>${platform}</strong> (${restaurants.length})</summary>`;
+                    for (const r of restaurants) {
+                        html += `
+                            <div class="restaurant">
+                                <b>${escapeHtml(r.name)}</b><br>
+                                <span class="platform">${escapeHtml(r.platform)}</span><br>
+                                <a href="${escapeHtml(r.url)}" target="_blank">🔗 Order directly →</a>
+                                <p style="font-size:0.8rem; color:#555;">${escapeHtml(r.snippet?.substring(0, 150) || '')}</p>
+                            </div>
+                        `;
+                    }
+                    html += `</details><br>`;
+                }
+                resultsDiv.innerHTML = html;
+            } catch (err) {
+                resultsDiv.innerHTML = `<p class="error">Error: ${err.message}. Check console for details.</p>`;
+                console.error(err);
             }
-        } catch (e) {
-            err.textContent = `SYSTEM ERROR: ${e.message}`;
-            err.style.display = 'block';
-        } finally {
-            loader.style.display = 'none';
-            btn.disabled = false;
-        }
-    };
-</script>
+        });
+        
+        function escapeHtml(str) { return str.replace(/[&<>]/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;'})[m]); }
+    </script>
 </body>
 </html>
