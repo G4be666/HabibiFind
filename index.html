@@ -1,129 +1,131 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SpotFinder — Direct Ordering</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com" />
-  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Barlow:wght@400;600&display=swap" rel="stylesheet" />
-  <style>
-    :root { --bg: #F5F2EC; --ink: #0D0D0D; --accent: #E8390E; --line: rgba(13,13,13,0.12); --font-display: 'Syne', sans-serif; --font-body: 'Barlow', sans-serif; }
-    body { background: var(--bg); color: var(--ink); font-family: var(--font-body); margin: 0; padding: 0; -webkit-font-smoothing: antialiased; }
-    .page { max-width: 800px; margin: 0 auto; padding: 40px 20px; }
-    h1 { font-family: var(--font-display); font-size: 38px; letter-spacing: -0.04em; margin-bottom: 5px; }
-    .search-card { background: #FAFAF7; border: 1.5px solid var(--line); border-radius: 12px; padding: 20px; margin-bottom: 30px; }
-    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px; }
-    input { width: 100%; padding: 12px; border: 1.5px solid var(--line); border-radius: 6px; font-size: 16px; box-sizing: border-box; background: #fff; border: 1.5px solid var(--line); }
-    .chips { display: flex; flex-wrap: wrap; gap: 6px; margin: 15px 0; }
-    .chip { padding: 6px 12px; border-radius: 20px; border: 1px solid var(--line); cursor: pointer; font-size: 12px; font-weight: 600; background: #fff; color: var(--ink); }
-    .chip.on { background: var(--ink); color: #fff; border-color: var(--ink); }
-    .search-btn { width: 100%; padding: 16px; background: var(--ink); color: #fff; border: none; border-radius: 6px; font-family: var(--font-display); font-weight: 800; cursor: pointer; text-transform: uppercase; }
-    .search-btn:disabled { opacity: 0.3; }
-    .status { text-align: center; padding: 20px; font-weight: 600; display: none; color: var(--accent); }
-    .restaurant-card { background: #fff; border: 1.5px solid var(--line); padding: 20px; border-radius: 8px; margin-bottom: 12px; }
-    .rc-name { font-family: var(--font-display); font-size: 18px; margin-bottom: 4px; }
-    .rc-link { display: inline-block; margin-top: 10px; padding: 10px 20px; background: var(--accent); color: #fff; text-decoration: none; border-radius: 4px; font-size: 12px; font-weight: 700; }
-    .empty { text-align: center; padding: 40px; opacity: 0.6; font-weight: 600; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SpotFinder Pro | Direct Dining Intelligence</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Syne:wght@700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #E8390E; --dark: #0D0D0D; --glass: rgba(255,255,255,0.8);
+            --border: rgba(13,13,13,0.08); --shadow: 0 8px 30px rgba(0,0,0,0.04);
+        }
+        body { background: #F9F8F6; color: var(--dark); font-family: 'Inter', sans-serif; margin: 0; line-height: 1.6; }
+        
+        /* Navbar */
+        nav { padding: 20px 40px; border-bottom: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--glass); backdrop-filter: blur(10px); position: sticky; top: 0; z-index: 100; }
+        .logo { font-family: 'Syne', sans-serif; font-size: 24px; font-weight: 800; letter-spacing: -1px; }
+
+        /* Hero & Search */
+        .hero { max-width: 1000px; margin: 80px auto; padding: 0 20px; text-align: center; }
+        h1 { font-family: 'Syne', sans-serif; font-size: clamp(40px, 8vw, 72px); letter-spacing: -3px; line-height: 0.9; margin-bottom: 24px; }
+        
+        .search-container { 
+            background: #fff; border: 1px solid var(--border); padding: 8px; border-radius: 16px; 
+            box-shadow: var(--shadow); display: flex; gap: 8px; max-width: 600px; margin: 40px auto;
+        }
+        input { border: none; padding: 16px; font-size: 16px; width: 100%; outline: none; font-family: inherit; }
+        .btn-search { background: var(--dark); color: #fff; border: none; padding: 0 32px; border-radius: 12px; font-weight: 600; cursor: pointer; transition: 0.2s; }
+        .btn-search:hover { transform: translateY(-2px); background: var(--primary); }
+
+        /* Filter Chips */
+        .filters { display: flex; justify-content: center; gap: 10px; flex-wrap: wrap; margin-bottom: 60px; }
+        .chip { padding: 8px 16px; border-radius: 100px; border: 1px solid var(--border); background: #fff; cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s; }
+        .chip.active { background: var(--dark); color: #fff; border-color: var(--dark); }
+
+        /* Results Grid */
+        .results-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 24px; max-width: 1200px; margin: 0 auto 100px; padding: 0 20px; }
+        .card { background: #fff; border: 1px solid var(--border); border-radius: 20px; padding: 24px; transition: 0.3s; position: relative; overflow: hidden; }
+        .card:hover { border-color: var(--primary); box-shadow: var(--shadow); }
+        .card-tag { font-size: 10px; font-weight: 800; text-transform: uppercase; color: var(--primary); letter-spacing: 1px; margin-bottom: 12px; }
+        .card-name { font-family: 'Syne', sans-serif; font-size: 20px; margin-bottom: 8px; }
+        .card-meta { font-size: 14px; opacity: 0.6; margin-bottom: 20px; }
+        .card-link { display: block; text-align: center; background: var(--dark); color: #fff; text-decoration: none; padding: 12px; border-radius: 10px; font-weight: 600; font-size: 14px; }
+
+        /* Skeleton Loading */
+        .loader { display: none; text-align: center; padding: 40px; font-weight: 600; }
+    </style>
 </head>
 <body>
-  <div class="page">
-    <h1>SpotFinder<span>.</span></h1>
-    <p style="opacity:0.7; margin-bottom:25px;">Finding direct ordering links for your city...</p>
 
-    <div class="search-card">
-      <div class="grid">
-        <input type="text" id="city" placeholder="City (e.g. Chicago)">
-        <input type="text" id="state" placeholder="State (e.g. IL)">
-      </div>
-      <div class="chips" id="chips"></div>
-      <button class="search-btn" id="btn" disabled>Find Restaurants</button>
+<nav>
+    <div class="logo">SPOTFINDER<span style="color:var(--primary)">.</span></div>
+    <div style="font-size: 12px; font-weight: 600; opacity: 0.5;">v2.0 PRO BOLD</div>
+</nav>
+
+<div class="hero">
+    <h1>Own your data.<br>Skip the apps.</h1>
+    <p>The first search engine for direct restaurant ordering links.</p>
+    
+    <div class="search-container">
+        <input type="text" id="location" placeholder="Enter City, State (e.g. Austin, TX)">
+        <button class="btn-search" id="searchBtn">SEARCH</button>
     </div>
 
-    <div id="status" class="status">Searching the web...</div>
-    <div id="results"></div>
-  </div>
+    <div class="filters" id="platformFilters">
+        </div>
+</div>
 
-  <script>
-    const PLATFORMS = ["Toast", "Clover", "Menufy", "SpotOn", "Thanx", "SmileDining", "TapMango", "Olo", "BentoBox"];
-    let selected = new Set(["Toast", "SpotOn", "Clover", "Menufy"]);
-    const chipsCont = document.getElementById('chips');
-    const btn = document.getElementById('btn');
+<div id="loader" class="loader">Aggregating live data from the web...</div>
+<div class="results-grid" id="results"></div>
 
+<script>
+    const PLATFORMS = ["Toast", "SpotOn", "Menufy", "BentoBox", "Olo", "ChowNow"];
+    let selectedPlatforms = new Set(["Toast", "SpotOn"]);
+    const resultsGrid = document.getElementById('results');
+    const loader = document.getElementById('loader');
+
+    // Initialize Chips
+    const filterCont = document.getElementById('platformFilters');
     PLATFORMS.forEach(p => {
-      const el = document.createElement('div');
-      el.className = `chip ${selected.has(p) ? 'on' : ''}`;
-      el.textContent = p;
-      el.onclick = () => {
-        selected.has(p) ? selected.delete(p) : selected.add(p);
-        el.classList.toggle('on');
-        btn.disabled = selected.size === 0;
-      };
-      chipsCont.appendChild(el);
+        const chip = document.createElement('div');
+        chip.className = `chip ${selectedPlatforms.has(p) ? 'active' : ''}`;
+        chip.textContent = p;
+        chip.onclick = () => {
+            selectedPlatforms.has(p) ? selectedPlatforms.delete(p) : selectedPlatforms.add(p);
+            chip.classList.toggle('active');
+        };
+        filterCont.appendChild(chip);
     });
 
-    document.querySelectorAll('input').forEach(i => i.oninput = () => {
-      btn.disabled = !document.getElementById('city').value || !document.getElementById('state').value || selected.size === 0;
-    });
+    document.getElementById('searchBtn').onclick = async () => {
+        const query = document.getElementById('location').value;
+        if(!query || selectedPlatforms.size === 0) return;
 
-    btn.onclick = async () => {
-      const city = document.getElementById('city').value;
-      const state = document.getElementById('state').value;
-      const resultsDiv = document.getElementById('results');
-      const status = document.getElementById('status');
-      
-      btn.disabled = true;
-      status.style.display = 'block';
-      resultsDiv.innerHTML = '';
-
-      try {
-        const res = await fetch('/api/search', {
-          method: 'POST',
-          body: JSON.stringify({ city, state, platforms: Array.from(selected) })
-        });
+        const [city, state] = query.split(',').map(s => s.trim());
         
-        let text = await res.text();
-        
-        // --- IMPROVED CLEANER ---
-        let cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        const start = Math.min(
-            cleaned.indexOf('{') === -1 ? Infinity : cleaned.indexOf('{'),
-            cleaned.indexOf('[') === -1 ? Infinity : cleaned.indexOf('[')
-        );
-        const end = Math.max(cleaned.lastIndexOf('}'), cleaned.lastIndexOf(']'));
+        loader.style.display = 'block';
+        resultsGrid.innerHTML = '';
 
-        // If the AI didn't return a JSON block, show "No results" instead of an error
-        if (start === Infinity || end === -1) {
-          resultsDiv.innerHTML = `<div class="empty">No direct links found for ${city}.<br>Try adding more platforms like Toast or Menufy!</div>`;
-          return;
-        }
-
-        const data = JSON.parse(cleaned.substring(start, end + 1));
-        const resultsArray = data.results ? data.results : (Array.isArray(data) ? data : []);
-
-        if (resultsArray.length === 0) {
-          resultsDiv.innerHTML = `<div class="empty">No results found in ${city}.</div>`;
-        } else {
-          resultsArray.forEach(group => {
-            if (!group.restaurants) return;
-            group.restaurants.forEach(r => {
-              resultsDiv.innerHTML += `
-                <div class="restaurant-card">
-                  <div style="font-size:10px; font-weight:800; color:var(--accent); text-transform:uppercase;">${group.platform}</div>
-                  <div class="rc-name">${r.name}</div>
-                  <div style="font-size:13px; opacity:0.7;">${r.cuisine || 'Restaurant'} • ${r.address || city}</div>
-                  <a href="${r.orderUrl}" target="_blank" class="rc-link">Order Direct ↗</a>
-                </div>`;
+        try {
+            const response = await fetch('/api/search', {
+                method: 'POST',
+                body: JSON.stringify({ city, state, platforms: Array.from(selectedPlatforms) })
             });
-          });
+
+            const data = await response.json();
+            
+            if (!data.results) throw new Error("No data found.");
+
+            data.results.forEach(group => {
+                group.restaurants.forEach(r => {
+                    resultsGrid.innerHTML += `
+                        <div class="card">
+                            <div class="card-tag">${group.platform}</div>
+                            <div class="card-name">${r.name}</div>
+                            <div class="card-meta">${r.cuisine || 'Restaurant'} • ${r.address || city}</div>
+                            <a href="${r.orderUrl}" target="_blank" class="card-link">ORDER DIRECT</a>
+                        </div>
+                    `;
+                });
+            });
+        } catch (err) {
+            resultsGrid.innerHTML = `<div style="grid-column: 1/-1; text-align:center; opacity:0.5;">${err.message}</div>`;
+        } finally {
+            loader.style.display = 'none';
         }
-      } catch (e) {
-        resultsDiv.innerHTML = `<div class="empty">The AI got confused. Try one more time!</div>`;
-      } finally {
-        status.style.display = 'none';
-        btn.disabled = false;
-      }
-    };
-  </script>
+    }
+</script>
+
 </body>
 </html>
