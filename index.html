@@ -4,8 +4,8 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SpotFinder — Discover Hidden Restaurant Ordering Pages</title>
-  <link rel="preconnect" href="[https://fonts.googleapis.com](https://fonts.googleapis.com)" />
-  <link href="[https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Barlow:wght@300;400;600&display=swap](https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Barlow:wght@300;400;600&display=swap)" rel="stylesheet" />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@700;800&family=Barlow:wght@300;400;600&display=swap" rel="stylesheet" />
   <style>
     :root {
       --bg: #F5F2EC; --ink: #0D0D0D; --accent: #E8390E; --line: rgba(13,13,13,0.12);
@@ -18,8 +18,8 @@
     .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 20px; }
     input { width: 100%; padding: 12px; border: 1.5px solid var(--line); border-radius: 6px; font-size: 16px; outline: none; background: var(--bg); }
     .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 20px 0; }
-    .chip { padding: 8px 16px; border-radius: 20px; border: 1.5px solid var(--line); cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s; }
-    .chip.on { background: var(--ink); color: white; border-color: var(--ink); }
+    .chip { padding: 8px 16px; border-radius: 20px; border: 1.5px solid var(--line); cursor: pointer; font-size: 13px; font-weight: 600; transition: 0.2s; color: var(--ink); opacity: 0.6; }
+    .chip.on { background: var(--ink); color: white; border-color: var(--ink); opacity: 1; }
     .search-btn { width: 100%; padding: 16px; background: var(--ink); color: white; border: none; border-radius: 6px; font-family: var(--font-display); font-weight: 800; text-transform: uppercase; cursor: pointer; }
     .search-btn:disabled { opacity: 0.4; }
     .status { padding: 20px; text-align: center; font-weight: 600; display: none; }
@@ -31,7 +31,7 @@
 <body>
   <div class="page">
     <h1>SpotFinder<span>.</span></h1>
-    <p style="margin-bottom:40px; opacity:0.8;">Find restaurants using direct ordering platforms instead of third-party apps.</p>
+    <p style="margin-bottom:40px; opacity:0.8;">Find restaurants using direct ordering platforms like Toast and SpotOn.</p>
 
     <div class="search-card">
       <div class="grid">
@@ -42,13 +42,13 @@
       <button class="search-btn" id="btn" disabled>Find Restaurants</button>
     </div>
 
-    <div id="status" class="status">Searching the web...</div>
+    <div id="status" class="status">Searching for hidden menus...</div>
     <div id="results"></div>
   </div>
 
   <script>
     const PLATFORMS = ["Toast", "Clover", "Menufy", "SpotOn", "Thanx", "SmileDining", "TapMango", "Olo", "BentoBox"];
-    let selected = new Set(["Toast", "SpotOn", "Clover"]);
+    let selected = new Set(["Toast", "SpotOn", "Clover", "Menufy"]);
     const chipsCont = document.getElementById('chips');
     const btn = document.getElementById('btn');
 
@@ -84,15 +84,16 @@
           body: JSON.stringify({ city, state, platforms: Array.from(selected) })
         });
         
-        let text = await res.text();
+        let rawResponse = await res.text();
         
-        // CLEANER: Strips out Markdown and any non-JSON noise
-        const cleaned = text.replace(/```json/g, "").replace(/```/g, "").trim();
-        const start = cleaned.indexOf('{');
-        const end = cleaned.lastIndexOf('}');
+        // IRONCLAD JSON HUNTER: Fixes the 'Unexpected token' error from your screenshot
+        const start = rawResponse.indexOf('{');
+        const end = rawResponse.lastIndexOf('}');
         
-        if (start === -1) throw new Error("Could not parse data. Try another search.");
-        const data = JSON.parse(cleaned.substring(start, end + 1));
+        if (start === -1) throw new Error("No data returned. Try a larger city.");
+        
+        const cleanJson = rawResponse.substring(start, end + 1);
+        const data = JSON.parse(cleanJson);
 
         if (!data.results || data.results.length === 0) {
           resultsDiv.innerHTML = "<p style='text-align:center;'>No restaurants found for these platforms in this area.</p>";
@@ -110,7 +111,8 @@
           });
         }
       } catch (e) {
-        resultsDiv.innerHTML = `<div style="color:red; text-align:center; padding:20px;">Error: ${e.message}</div>`;
+        resultsDiv.innerHTML = `<div style="color:red; text-align:center; padding:20px;">Notice: ${e.message}</div>`;
+        console.error("Full AI response was:", rawResponse);
       } finally {
         status.style.display = 'none';
         btn.disabled = false;
