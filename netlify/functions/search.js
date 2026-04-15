@@ -1,4 +1,3 @@
-// HabibiFind — Gemini 2.0 High-Reliability Search (v3.0)
 const GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent";
 
 exports.handler = async (event) => {
@@ -10,27 +9,13 @@ exports.handler = async (event) => {
 
     if (event.httpMethod === "OPTIONS") return { statusCode: 200, headers: corsHeaders, body: "" };
 
-    const apiKey = process.env.GEMINI_API_KEY;
-    if (!apiKey) return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: "Missing GEMINI_API_KEY" }) };
-
     try {
         const { city, state, platforms } = JSON.parse(event.body);
-        const location = `${city}, ${state}`;
+        const apiKey = process.env.GEMINI_API_KEY;
 
-        // Strictly instructed prompt to prevent conversational "noise"
-        const prompt = `SEARCH GOOGLE for real restaurants in ${location} using: ${platforms.join(", ")}.
-        Focus on these specific URL patterns:
-        - Clover (clover.com/online-ordering/)
-        - Menufy (menufy.com)
-        - SpotOn (orderspoton.com)
-        - Thanx (thanx.com)
-        - SmileDining (smiledining.com)
-        - TapMango (tapmango.com)
-        - Toast (toasttab.com)
-        - Olo (olo.com)
-        
-        Return ONLY valid JSON. No text before or after.
-        Format: {"results": [{"platform": "Name", "restaurants": [{"name": "N", "cuisine": "C", "address": "A", "orderUrl": "URL", "website": "URL", "note": ""}]}]}`;
+        const prompt = `Act as a high-precision local data scraper. Use Google Search to find restaurants in ${city}, ${state} that use ${platforms.join(", ")} for direct online ordering. 
+        Focus on identifying specific URLs from: toasttab.com, orderspoton.com, menufy.com, chownow.com, and bentobox.com. 
+        Verify that the URLs are active ordering pages. Return a structured list categorized by platform.`;
 
         const response = await fetch(`${GEMINI_API_URL}?key=${apiKey}`, {
             method: "POST",
@@ -38,35 +23,55 @@ exports.handler = async (event) => {
             body: JSON.stringify({
                 contents: [{ parts: [{ text: prompt }] }],
                 tools: [{ google_search: {} }],
-                generationConfig: { 
+                generationConfig: {
+                    temperature: 0.1,
+                    // This is the professional way to force JSON format
                     response_mime_type: "application/json",
-                    temperature: 0
+                    response_schema: {
+                        type: "object",
+                        properties: {
+                            results: {
+                                type: "array",
+                                items: {
+                                    type: "object",
+                                    properties: {
+                                        platform: { type: "string" },
+                                        restaurants: {
+                                            type: "array",
+                                            items: {
+                                                type: "object",
+                                                properties: {
+                                                    name: { type: "string" },
+                                                    cuisine: { type: "string" },
+                                                    address: { type: "string" },
+                                                    orderUrl: { type: "string" },
+                                                    website: { type: "string" }
+                                                },
+                                                required: ["name", "orderUrl"]
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             })
         });
 
         const data = await response.json();
         
-        if (!data.candidates || !data.candidates[0].content.parts[0].text) {
-          throw new Error("AI returned an empty response.");
+        // Error handling for API limits or search failures
+        if (!data.candidates) {
+            return { statusCode: 429, headers: corsHeaders, body: JSON.stringify({ error: "Search quota reached." }) };
         }
-
-        let rawText = data.candidates[0].content.parts[0].text;
-        
-        // Manual scrub: Removes markdown code blocks if the AI accidentally uses them
-        const cleanJson = rawText.replace(/```json|```/g, "").trim();
 
         return {
             statusCode: 200,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
-            body: cleanJson,
+            body: data.candidates[0].content.parts[0].text
         };
     } catch (err) {
-        console.error("Search Error:", err);
-        return { 
-            statusCode: 500, 
-            headers: corsHeaders, 
-            body: JSON.stringify({ error: "The search engine stuttered. Please try again in 5 seconds." }) 
-        };
+        return { statusCode: 500, headers: corsHeaders, body: JSON.stringify({ error: err.message }) };
     }
 };
